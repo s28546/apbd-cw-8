@@ -1,7 +1,14 @@
-﻿using LinqTasks.Extensions;
-using LinqTasks.Models;
+﻿using LinqTasks.Models;
 
 namespace LinqTasks;
+
+public static class CustomExtensionMethods
+{
+    public static IEnumerable<Emp> GetEmpsWithSubordinates(this IEnumerable<Emp> emps)
+    {
+        return emps.Where(emp => emp.Mgr != null);
+    }
+}
 
 public static partial class Tasks
 {
@@ -19,7 +26,7 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<Emp> Task1()
     {
-        return null;
+        return Emps.Where(emp => emp.Job == "Backend programmer");
     }
 
     /// <summary>
@@ -27,7 +34,9 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<Emp> Task2()
     {
-        return null;
+        return Emps
+            .Where(emp => emp.Job == "Frontend programmer" && emp.Salary > 1000)
+            .OrderByDescending(emp => emp.Ename);
     }
 
 
@@ -36,7 +45,8 @@ public static partial class Tasks
     /// </summary>
     public static int Task3()
     {
-        return -1;
+        return Emps.Max(emp => emp.Salary);
+        ;
     }
 
     /// <summary>
@@ -44,7 +54,8 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<Emp> Task4()
     {
-        return null;
+        int maxSalary = Emps.Max(emp => emp.Salary);
+        return Emps.Where(emp => emp.Salary == maxSalary);
     }
 
     /// <summary>
@@ -52,7 +63,7 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task5()
     {
-        return null;
+        return Emps.Select(emp => new { Nazwisko = emp.Ename, Praca = emp.Job });
     }
 
     /// <summary>
@@ -62,7 +73,9 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task6()
     {
-        return null;
+        return from emp in Emps
+            join dept in Depts on emp.Deptno equals dept.Deptno
+            select new { emp.Ename, emp.Job, dept.Dname };
     }
 
     /// <summary>
@@ -70,7 +83,8 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task7()
     {
-        return null;
+        return Emps.GroupBy(emp => emp.Job)
+            .Select(group => new { Praca = group.Key, LiczbaPracownikow = group.Count() });
     }
 
     /// <summary>
@@ -78,8 +92,8 @@ public static partial class Tasks
     ///     z elementów kolekcji pracuje jako "Backend programmer".
     /// </summary>
     public static bool Task8()
-    { 
-        return false;
+    {
+        return Emps.Any(emp => emp.Job == "Backend programmer");
     }
 
     /// <summary>
@@ -88,7 +102,8 @@ public static partial class Tasks
     /// </summary>
     public static Emp Task9()
     {
-        return null;
+        return Emps.Where(emp => emp.Job == "Frontend programmer")
+            .MaxBy(emp => emp.HireDate);
     }
 
     /// <summary>
@@ -98,7 +113,10 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task10()
     {
-        return null;
+        var firstQuery = Emps.Select(emp => new { emp.Ename, emp.Job, emp.HireDate });
+        var secondQuery =
+            Enumerable.Repeat(new { Ename = "Brak wartości", Job = (string)null, Hiredate = (DateTime?)null }, 1);
+        return firstQuery.Cast<object>().Concat(secondQuery.Cast<object>());
     }
 
     /// <summary>
@@ -114,7 +132,13 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task11()
     {
-        return null;
+        return Emps.GroupBy(emp => emp.Deptno)
+            .Where(group => group.Count() > 1)
+            .Select(group => new
+            {
+                name = group.Key,
+                numOfEmployees = group.Count()
+            });
     }
 
     /// <summary>
@@ -126,7 +150,7 @@ public static partial class Tasks
     public static IEnumerable<Emp> Task12()
     {
         IEnumerable<Emp> result = Emps.GetEmpsWithSubordinates();
-        
+
         return result;
     }
 
@@ -139,7 +163,18 @@ public static partial class Tasks
     /// </summary>
     public static int Task13(int[] arr)
     {
-        return -1;
+        if (arr == null || arr.Length == 0)
+            throw new ArgumentException("Input array cannot be null or empty.");
+
+        var odd = arr.GroupBy(x => x)
+            .Where(group => group.Count() % 2 != 0)
+            .Select(group => group.Key)
+            .SingleOrDefault();
+
+        if (odd == default(int))
+            throw new InvalidOperationException("No number with odd occurrences found.");
+
+        return odd;
     }
 
     /// <summary>
@@ -148,6 +183,8 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<Dept> Task14()
     {
-        return null;
+        return Depts.Where(dept =>
+            Emps.All(emp => emp.Deptno != dept.Deptno || emp.Deptno == null) ||
+            Emps.Count(emp => emp.Deptno == dept.Deptno) == 5);
     }
 }
