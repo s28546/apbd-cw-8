@@ -6,11 +6,13 @@ public static class CustomExtensionMethods
 {
     public static IEnumerable<Emp> GetEmpsWithSubordinates(this IEnumerable<Emp> emps)
     {
-        return emps.Where(emp => emp.Mgr != null);
+        return emps.Where(emp => emps.Any(sub => sub.Mgr?.Empno == emp.Empno))
+            .OrderBy(emp => emp.Ename)
+            .ThenByDescending(emp => emp.Salary);
     }
 }
 
-public static partial class Tasks
+public static partial class  Tasks
 {
     public static IEnumerable<Emp> Emps { get; set; }
     public static IEnumerable<Dept> Depts { get; set; }
@@ -46,7 +48,6 @@ public static partial class Tasks
     public static int Task3()
     {
         return Emps.Max(emp => emp.Salary);
-        ;
     }
 
     /// <summary>
@@ -113,12 +114,13 @@ public static partial class Tasks
     /// </summary>
     public static IEnumerable<object> Task10()
     {
-        var firstQuery = Emps.Select(emp => new { emp.Ename, emp.Job, emp.HireDate });
-        var secondQuery =
-            Enumerable.Repeat(new { Ename = "Brak wartości", Job = (string)null, Hiredate = (DateTime?)null }, 1);
-        return firstQuery.Cast<object>().Concat(secondQuery.Cast<object>());
-    }
+        var query = Emps
+            .Select(emp => new { emp.Ename, emp.Job, emp.HireDate })
+            .Union(new[] { new { Ename = "Brak wartości", Job = (string)null, HireDate = (DateTime?)null } });
 
+        return query.Cast<object>();
+    }
+    
     /// <summary>
     ///     Wykorzystując LINQ pobierz pracowników podzielony na departamenty pamiętając, że:
     ///     1. Interesują nas tylko departamenty z liczbą pracowników powyżej 1
@@ -134,11 +136,14 @@ public static partial class Tasks
     {
         return Emps.GroupBy(emp => emp.Deptno)
             .Where(group => group.Count() > 1)
-            .Select(group => new
-            {
-                name = group.Key,
-                numOfEmployees = group.Count()
-            });
+            .Join(Depts,
+                group => group.Key,
+                dept => dept.Deptno,
+                (group, dept) => new
+                {
+                    name = dept.Dname,
+                    numOfEmployees = group.Count()
+                });
     }
 
     /// <summary>
@@ -150,7 +155,6 @@ public static partial class Tasks
     public static IEnumerable<Emp> Task12()
     {
         IEnumerable<Emp> result = Emps.GetEmpsWithSubordinates();
-
         return result;
     }
 
@@ -163,17 +167,11 @@ public static partial class Tasks
     /// </summary>
     public static int Task13(int[] arr)
     {
-        if (arr == null || arr.Length == 0)
-            throw new ArgumentException("Input array cannot be null or empty.");
-
         var odd = arr.GroupBy(x => x)
             .Where(group => group.Count() % 2 != 0)
             .Select(group => group.Key)
             .SingleOrDefault();
-
-        if (odd == default(int))
-            throw new InvalidOperationException("No number with odd occurrences found.");
-
+        
         return odd;
     }
 
